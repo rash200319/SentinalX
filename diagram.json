@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-breadboard", "id": "bb1", "top": 35.4, "left": 60.4, "attrs": {} },
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 57.6, "left": -158.36, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir1", "top": 253.6, "left": 539.82, "attrs": {} },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic1",
+      "top": 260.7,
+      "left": 312.7,
+      "attrs": { "distance": "224" }
+    },
+    { "type": "board-mfrc522", "id": "rfid1", "top": -137.05, "left": 310.64, "attrs": {} },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": 301.42, "left": 79.12, "attrs": {} },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 40.8,
+      "left": -353.4,
+      "attrs": { "volume": "0.1" }
+    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -124.5, "left": -43.8, "attrs": {} },
+    { "type": "wokwi-gas-sensor", "id": "gas1", "top": 463.5, "left": 112.6, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 188.4,
+      "left": -255.4,
+      "attrs": { "color": "red" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:3V3", "bb1:tp.1", "green", [ "h0.15", "v-48" ] ],
+    [ "esp:GND.2", "bb1:tn.1", "black", [ "v-28.8" ] ],
+    [ "imu1:VCC", "bb1:tp.10", "red", [ "v0" ] ],
+    [ "imu1:GND", "bb1:tn.10", "black", [ "v0" ] ],
+    [ "esp:5V", "bb1:bp.1", "red", [ "h-19.05", "v28.8", "h163.2", "v-67.2" ] ],
+    [ "esp:GND.3", "bb1:bn.1", "black", [ "h28.8", "v86.4" ] ],
+    [ "ultrasonic1:VCC", "bb1:bp.16", "red", [ "v0", "h-105.6" ] ],
+    [ "ultrasonic1:GND", "bb1:bn.17", "black", [ "v9.6", "h-126" ] ],
+    [ "pir1:VCC", "bb1:bp.36", "red", [ "v0", "h-57.6" ] ],
+    [ "pir1:GND", "bb1:bn.37", "black", [ "v19.2", "h-67.46" ] ],
+    [ "rfid1:3.3V", "bb1:tp.16", "green", [ "h0" ] ],
+    [ "rfid1:GND", "bb1:tn.17", "black", [ "h0" ] ],
+    [ "ultrasonic1:ECHO", "esp:13", "green", [ "v19.2", "h-519.2", "v-153.6" ] ],
+    [ "ultrasonic1:TRIG", "esp:12", "green", [ "v38.4", "h-538", "v-182.4" ] ],
+    [ "pir1:OUT", "esp:27", "green", [ "v76.8", "h-758.54", "v-240" ] ],
+    [ "bb1:tn.50", "bb1:bn.50", "green", [ "v9.5", "h47.2", "v163.2" ] ],
+    [ "rfid1:SCK", "esp:18", "green", [ "h-278.4", "v19.2" ] ],
+    [ "rfid1:MOSI", "esp:23", "green", [ "h-259.2", "v28.8" ] ],
+    [ "rfid1:MISO", "esp:19", "green", [ "h-230.4", "v86.4" ] ],
+    [ "rfid1:SDA", "esp:5", "green", [ "h-201.6", "v230.4" ] ],
+    [ "rfid1:RST", "esp:4", "green", [ "h-182.4", "v28.8" ] ],
+    [ "imu1:SDA", "esp:21", "green", [ "v-48", "h-124.72", "v-124.8" ] ],
+    [ "esp:22", "imu1:SCL", "green", [ "h86.4", "v182.4", "h105.6" ] ],
+    [ "esp:32", "bz1:2", "green", [ "h0" ] ],
+    [ "bz1:1", "bb1:bn.14", "green", [ "v278.4", "h585.6" ] ],
+    [ "esp:2", "led1:A", "green", [ "h19.2", "v86.4", "h-172.8" ] ],
+    [ "led1:C", "bb1:bn.10", "green", [ "v153.6", "h442" ] ],
+    [ "dht1:SDA", "esp:15", "green", [ "v0" ] ],
+    [ "dht1:GND", "bb1:tn.12", "black", [ "v28.8", "h220.8" ] ],
+    [ "dht1:VCC", "bb1:tp.11", "red", [ "v38.4", "h249.6" ] ],
+    [ "gas1:GND", "bb1:bn.12", "black", [ "h0" ] ],
+    [ "gas1:VCC", "bb1:bp.15", "red", [ "h0" ] ],
+    [ "gas1:AOUT", "esp:34", "green", [ "h-643.2", "v-144" ] ]
+  ],
+  "dependencies": {}
+}
