@@ -96,9 +96,17 @@ Virtual PinDescriptionV0Armed / Disarmed statusV1Temperature (°C)V2Gas level
     *   Gas leaks 
         
     *   High temperature warnings 
-        
 
-5\. Accomplishments
+
+
+5\. Libraries used
+---------------------
+1. MFRC522 - Read and write different types of Radio-Frequency IDentification (RFID) cards on your Arduino using a RC522 based reader connected via the Serial Peripheral Interface (SPI) interface.
+2. Adafruit MPU6050 - 6-DoF Accelerometer and Gyro Library for Arduino
+3. DHT sensor library- An Arduino library for the DHT series of low-cost temperature/humidity sensors.
+4. Blynk - It supports WiFi, Ethernet, Cellular connectivity. Works with over 400 boards like ESP8266, ESP32, Arduino, Raspberry Pi, Particle, etc.
+
+6\. Accomplishments
 ---------------------
 
 *   Successfully integrated SPI, I2C, Analog, and Digital components without conflicts
