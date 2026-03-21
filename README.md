@@ -39,20 +39,23 @@ ComponentGPIO PinFunctionBuzzer32Audible alarmRed LED2Indicates "Armed" status
 
 #### **Armed Mode**
 
-*   Activated by scanning an authorized RFID card
+*   Activated by scanning an authorized RFID card (BLUE)
+*   all other cards are not authorized 
     
 *   Security sensors become active:
     
     *   Motion detection (PIR)
         
     *   Proximity detection (Ultrasonic)
+    *   humidity temperature detection
+    *   gas detection
         
 
 #### **Disarmed Mode**
 
 *   Intrusion alerts are ignored
-    
-*   Environmental monitoring continues
+*   motion of the system is ignored
+*   gas and temperature rising is not ignored
     
 
 ### Safety Layer (Always Active)
