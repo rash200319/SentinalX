@@ -1,6 +1,6 @@
-#define BLYNK_TEMPLATE_ID ""
+#define BLYNK_TEMPLATE_ID "TMPL66EHBbSgs"
 #define BLYNK_TEMPLATE_NAME "SentinelX"
-#define BLYNK_AUTH_TOKEN "" // <--- PASTE YOUR TOKEN HERE
+#define BLYNK_AUTH_TOKEN "OeGjJkKpywz7WwNPKdPyEStyt8Y9UprG"
 
 #include <WiFi.h>
 #include <BlynkSimpleEsp32.h>
@@ -9,7 +9,6 @@
 #include <Wire.h>
 #include "DHT.h"
 
-// WiFi Credentials for Wokwi
 char auth[] = BLYNK_AUTH_TOKEN;
 char ssid[] = "Wokwi-GUEST";
 char pass[] = "";
@@ -32,19 +31,15 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 BlynkTimer timer;
 
 // System Variables
-bool isArmed = false;
-int16_t last_ax;
-const int tamperThreshold = 5000; 
+bool isArmed = true; // Armed at start as requested
+int16_t last_ax = 0;
+const int tamperThreshold = 8000; // Increased threshold to avoid sensitive buzzing
+unsigned long lastAlarmTime = 0;
+const int alarmInterval = 2000; // Only print/buzz every 2 seconds to avoid "nonstop" noise
 
-// This function sends data to Blynk every 2 seconds
 void myTimerEvent() {
   float temp = dht.readTemperature();
-  float hum = dht.readHumidity();
   int gasValue = analogRead(GAS_PIN);
-
-  // V0: Armed Status (1 or 0)
-  // V1: Temperature
-  // V2: Gas Level
   Blynk.virtualWrite(V0, isArmed ? 1 : 0);
   Blynk.virtualWrite(V1, temp);
   Blynk.virtualWrite(V2, gasValue);
@@ -52,8 +47,6 @@ void myTimerEvent() {
 
 void setup() {
   Serial.begin(115200);
-  
-  // Initialize Blynk & WiFi
   Blynk.begin(auth, ssid, pass);
 
   SPI.begin();
@@ -67,16 +60,21 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
 
-  // Wake up MPU6050
+  // MPU6050 Wakeup
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x6B);
   Wire.write(0);
   Wire.endTransmission(true);
 
-  // Setup timer to run every 2000ms (2 seconds)
-  timer.setInterval(2000L, myTimerEvent);
+  // Initial MPU reading to prevent immediate tamper alarm
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(0x3B);
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_ADDR, 2, true);
+  last_ax = Wire.read()<<8|Wire.read();
 
-  Serial.println("--- Aegis Home Guardian Online ---");
+  timer.setInterval(2000L, myTimerEvent);
+  Serial.println("--- SentinelX System: ARMED & ONLINE ---");
 }
 
 void loop() {
@@ -87,70 +85,81 @@ void loop() {
   float temp = dht.readTemperature();
   int gasValue = analogRead(GAS_PIN);
   
-  // 1. ALWAYS ACTIVE: Safety Layer
-  if (gasValue > 2000 || temp > 50.0) {
-    triggerAlarm("SAFETY CRITICAL: GAS OR FIRE!");
-    Blynk.logEvent("safety_alert", "Gas or Fire Detected!");
+  // 1. SAFETY LAYER: Always Active
+  if (gasValue > 2500 || temp > 55.0) {
+    triggerAlarm("CRITICAL: GAS/FIRE LEAK!");
   }
 
-  // 2. CONDITIONAL: Security Layer
+  // 2. SECURITY LAYER: Only if Armed
   if (isArmed) {
     digitalWrite(LED_PIN, HIGH);
     checkSecuritySensors();
   } else {
+    // DISARMED: Turn everything off
     digitalWrite(LED_PIN, LOW);
-    noTone(BUZZER_PIN);
+    noTone(BUZZER_PIN); 
   }
 }
 
 void checkRFID() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-    isArmed = !isArmed; // Toggle State
-    Serial.print("System ");
-    Serial.println(isArmed ? "ARMED 🔒" : "DISARMED 🔓");
-    
-    // Send update to Blynk immediately
-    Blynk.virtualWrite(V0, isArmed ? 1 : 0);
-    Blynk.logEvent("system_update", isArmed ? "System Armed" : "System Disarmed");
+    byte blueCard[4] = {0x01, 0x02, 0x03, 0x04}; // Ensure this matches your blue card UID
+    bool isAuthorized = true;
+    for (byte i = 0; i < 4; i++) {
+      if (mfrc522.uid.uidByte[i] != blueCard[i]) isAuthorized = false;
+    }
 
-    tone(BUZZER_PIN, isArmed ? 1000 : 500, 200);
+    if (isAuthorized) {
+      isArmed = !isArmed;
+      Serial.print("User Verified. System: ");
+      Serial.println(isArmed ? "ARMED 🔒" : "DISARMED (Standby Mode) 🔓");
+      
+      if (!isArmed) noTone(BUZZER_PIN); // Kill alarm immediately on disarm
+      
+      Blynk.virtualWrite(V0, isArmed ? 1 : 0);
+      tone(BUZZER_PIN, isArmed ? 1000 : 500, 300);
+    } else {
+      Serial.println("Unauthorized Key 🚫");
+      triggerAlarm("TAMPER: Invalid RFID Attempt!");
+    }
     delay(500);
     mfrc522.PICC_HaltA();
   }
 }
 
 void checkSecuritySensors() {
-  // Check Motion
+  // Motion
   if (digitalRead(PIR_PIN) == HIGH) {
-    triggerAlarm("INTRUSION: Motion!");
-    Blynk.logEvent("intrusion", "Motion Detected in Home!");
+    triggerAlarm("INTRUSION: Motion Detected");
   }
 
-  // Check Distance
+  // Proximity
   digitalWrite(TRIG_PIN, LOW); delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH); delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
   float distance = pulseIn(ECHO_PIN, HIGH) * 0.034 / 2;
   if (distance < 50 && distance > 1) {
-    triggerAlarm("INTRUSION: Proximity!");
-    Blynk.logEvent("intrusion", "Someone is at the door!");
+    triggerAlarm("INTRUSION: Proximity Alert");
   }
 
-  // Check Tamper (MPU6050)
+  // Tamper
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x3B);
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_ADDR, 6, true);
+  Wire.requestFrom(MPU_ADDR, 2, true);
   int16_t ax = Wire.read()<<8|Wire.read();
   if (abs(ax - last_ax) > tamperThreshold) {
-    triggerAlarm("TAMPER: Moved!");
-    Blynk.logEvent("tamper", "Security Device was moved!");
+    triggerAlarm("TAMPER: System Movement");
   }
   last_ax = ax;
 }
 
 void triggerAlarm(String reason) {
-  Serial.println("🚨 ALERT: " + reason);
-  tone(BUZZER_PIN, 2000); 
-  delay(100);
+  // Only trigger if at least 2 seconds have passed since the last pulse
+  if (millis() - lastAlarmTime > alarmInterval) {
+    Serial.println("🚨 " + reason);
+    Blynk.logEvent("intrusion", reason); // Sends alert to phone
+    tone(BUZZER_PIN, 2000, 1000); // Buzz for 1 second
+    lastAlarmTime = millis();
+  }
 }
